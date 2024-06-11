@@ -1,6 +1,6 @@
 import os
 from typing import List
-
+import fitz
 
 class TextFileLoader:
     def __init__(self, path: str, encoding: str = "utf-8"):
@@ -12,24 +12,35 @@ class TextFileLoader:
         if os.path.isdir(self.path):
             self.load_directory()
         elif os.path.isfile(self.path) and self.path.endswith(".txt"):
-            self.load_file()
+            self.load_file(self.path)
+        elif os.path.isfile(self.path) and self.path.endswith(".pdf"):
+            self.load_pdf_file(self.path)
         else:
             raise ValueError(
-                "Provided path is neither a valid directory nor a .txt file."
+                f"Provided path {self.path} is neither a valid directory, a .pdf file, nor a .txt file."
             )
 
-    def load_file(self):
-        with open(self.path, "r", encoding=self.encoding) as f:
+    def load_pdf_file(self, file_path):
+        print(f"Loading PDF file: {file_path}")
+        document = fitz.open(file_path)
+        text = ""
+        for page in document:
+            text += page.get_text()
+        self.documents.append(text)
+    
+    def load_file(self, file_path):
+        print(f"Loading text file: {file_path}")
+        with open(file_path, "r", encoding=self.encoding) as f:
             self.documents.append(f.read())
 
     def load_directory(self):
         for root, _, files in os.walk(self.path):
             for file in files:
+                file_path = os.path.join(root, file)
                 if file.endswith(".txt"):
-                    with open(
-                        os.path.join(root, file), "r", encoding=self.encoding
-                    ) as f:
-                        self.documents.append(f.read())
+                    self.load_file(file_path)
+                elif file.endswith(".pdf"):
+                    self.load_pdf_file(file_path)
 
     def load_documents(self):
         self.load()
@@ -63,15 +74,19 @@ class CharacterTextSplitter:
 
 
 if __name__ == "__main__":
-    loader = TextFileLoader("data/KingLear.txt")
-    loader.load()
+    # List all files in the current directory to confirm the presence of AlmanackNaval.pdf
+    print(os.listdir('.'))
+    
+    # Load the PDF file
+    loader = TextFileLoader("AlmanackNaval.pdf")
+    documents = loader.load_documents()
     splitter = CharacterTextSplitter()
-    chunks = splitter.split_texts(loader.documents)
-    print(len(chunks))
-    print(chunks[0])
+    chunks = splitter.split_texts(documents)
+    print(f"Number of chunks: {len(chunks)}")
+    print(chunks[0][:1000])  # Print the first 1000 characters of the first chunk to verify
     print("--------")
-    print(chunks[1])
+    print(chunks[1][:1000])  # Print the first 1000 characters of the second chunk to verify
     print("--------")
-    print(chunks[-2])
+    print(chunks[-2][:1000])  # Print the first 1000 characters of the second last chunk to verify
     print("--------")
-    print(chunks[-1])
+    print(chunks[-1][:1000])  # Print the first 1000 characters of the last chunk to verify

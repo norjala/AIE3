@@ -1,0 +1,9 @@
+chainlit==1.0.400
+pandas
+langgraph 
+langchain 
+langchain_openai 
+langchain_experimental
+python-dotenv
+qdrant-client
+faiss-cpu
